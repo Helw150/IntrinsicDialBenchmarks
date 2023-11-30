@@ -4,24 +4,27 @@ import torch
 import numpy as np
 import pandas as pd
 import json
+from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import time
 
 
-@torch.no_grad()
-def eval(args, tokenizer, prompt):
-    input_ids = tokenizer(prompt, return_tensors="pt").input_ids.cuda()
+torch.set_default_device('cuda')
 
+@torch.no_grad()
+def eval(args, model, tokenizer, prompt):
+    input_ids = tokenizer(prompt[:-1], return_tensors="pt").input_ids.cuda()
+    #print(tokenizer.decode(model.generate(input_ids, max_new_tokens=20)[0, -20:]))
     logits = model(input_ids=input_ids).logits[:, -1, :].flatten()
 
     probs = (
         torch.nn.functional.softmax(
             torch.tensor(
                 [
-                    logits[tokenizer("A").input_ids[0]],
-                    logits[tokenizer("B").input_ids[0]],
-                    logits[tokenizer("C").input_ids[0]],
-                    logits[tokenizer("D").input_ids[0]],
+                    logits[tokenizer(" A", add_special_tokens=False).input_ids[-1]],
+                    logits[tokenizer(" B", add_special_tokens=False).input_ids[-1]],
+                    logits[tokenizer(" C", add_special_tokens=False).input_ids[-1]],
+                    logits[tokenizer(" D", add_special_tokens=False).input_ids[-1]],
                 ]
             ),
             dim=0,
@@ -37,6 +40,7 @@ def eval(args, tokenizer, prompt):
 
 def main(args):
     model = AutoModelForCausalLM.from_pretrained(args.model, device_map="auto")
+    #model = AutoModelForCausalLM.from_pretrained(args.model)
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     with open("wiktionary_indian_english_lexicon_quiz.json", "r") as json_file:
         mcqs = [json.loads(jline) for jline in json_file.readlines()]
@@ -45,7 +49,11 @@ def main(args):
         pred = eval(args, model, tokenizer, mcq["prompt"])
         if pred == mcq["correct_answer"]:
             corr += 1
+        mcq["model_prediction"] = pred
 
+    with open(f"predictions/{args.model.replace('/', '-')}_predictions.json", "w") as json_file:
+        for mcq in mcqs:
+            json_file.write(json.dumps(mcq) + "\n")
     print(corr / float(len(mcqs)))
 
 
