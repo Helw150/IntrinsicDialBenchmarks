@@ -3,7 +3,7 @@ import os
 import torch
 import numpy as np
 import pandas as pd
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 import time
 
 
