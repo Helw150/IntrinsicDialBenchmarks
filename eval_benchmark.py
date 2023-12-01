@@ -7,9 +7,7 @@ import json
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import time
-
-
-torch.set_default_device('cuda')
+from torch.cuda.amp import autocast
 
 @torch.no_grad()
 def eval(args, model, tokenizer, prompt):
@@ -39,6 +37,7 @@ def eval(args, model, tokenizer, prompt):
 
 
 def main(args):
+
     model = AutoModelForCausalLM.from_pretrained(args.model, device_map="auto")
     #model = AutoModelForCausalLM.from_pretrained(args.model)
     tokenizer = AutoTokenizer.from_pretrained(args.model)
