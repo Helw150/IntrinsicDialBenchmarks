@@ -29,6 +29,7 @@ def eval(args, model, tokenizer, prompt):
         )
         .detach()
         .cpu()
+        .type(torch.float16)
         .numpy()
     )
     pred = {0: "A", 1: "B", 2: "C", 3: "D"}[np.argmax(probs)]
@@ -37,10 +38,10 @@ def eval(args, model, tokenizer, prompt):
 
 
 def main(args):
-
-    model = AutoModelForCausalLM.from_pretrained(args.model, device_map="auto")
-    #model = AutoModelForCausalLM.from_pretrained(args.model)
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    #torch.set_default_device('cuda')
+    #model = AutoModelForCausalLM.from_pretrained(args.model, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(args.model, device_map="auto", trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     with open("wiktionary_indian_english_lexicon_quiz.json", "r") as json_file:
         mcqs = [json.loads(jline) for jline in json_file.readlines()]
     corr = 0
