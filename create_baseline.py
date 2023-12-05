@@ -9,8 +9,7 @@ def validate_dial(sense):
         for gloss in sense["glosses"]:
             if "plural" in gloss:
                 return False
-
-    if "categories" not in sense:
+    if "categories" not in sense or len(sense["categories"]) == 0:
         return True
     return False
 
@@ -25,7 +24,7 @@ def assign_letters(options):
 
 with open("kaikki.org-dictionary-English.json", "r") as json_file:
     raw_dict = [json.loads(jline) for jline in json_file.readlines()]
-    raw_dict = random.sample(raw_dict, 1041)
+    raw_dict = random.sample(raw_dict, 10000)
 
 processed_dict = []
 answers = {"noun": [], "verb": [], "adjective": []}
@@ -70,5 +69,5 @@ for entry in processed_dict:
     ] = f"Which of the following could \"{entry['term']}\" mean in Indian English when used as a {entry['pos']}?\n\n{string_options}\n\nAnswer: "
 
 with open("wiktionary_unmarked_english_lexicon_quiz.json", "w") as json_file:
-    for entry in processed_dict:
+    for entry in random.sample(processed_dict, 1041):
         json_file.write(json.dumps(entry) + "\n")
