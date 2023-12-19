@@ -4,6 +4,7 @@ import argparse
 from tqdm import tqdm
 
 MODELS = [
+    "gemini-pro",
     "anthropic.claude-v2:1",
     "anthropic.claude-instant-v1",
     "EleutherAI/pythia-70m",
