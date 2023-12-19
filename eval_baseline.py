@@ -4,13 +4,44 @@ import torch
 import numpy as np
 import pandas as pd
 import json
+import time
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import time
 from torch.cuda.amp import autocast
+
 import anthropic_bedrock
 from anthropic_bedrock import AnthropicBedrock
 
+import vertexai
+from vertexai.preview.generative_models import GenerativeModel, ChatSession, GenerationConfig, HarmCategory, HarmBlockThreshold
+
+
+def gemini_eval(args, model, prompt):
+    time.sleep(1)
+    safety_settings={
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    }
+    # Set parameters to reduce variability in responses
+    generation_config = GenerationConfig(
+        temperature=0,
+        top_k=1,
+        max_output_tokens=1,
+    )
+    responses = model.generate_content(
+        contents=[prompt],
+        generation_config=generation_config,
+        safety_settings=safety_settings,
+    )
+    print(responses.candidates[0].text)
+    if len(responses.candidates) == 0:
+        return "None"
+    if not responses.candidates[0].text.strip() in ["A", "B", "C", "D"]:
+        print("EXCEPT")
+    return responses.candidates[0].text.strip()
 
 def claude_eval(args, client, prompt):
     completion = client.completions.create(
@@ -58,7 +89,12 @@ def main(args):
     # torch.set_default_device('cuda')
     # model = AutoModelForCausalLM.from_pretrained(args.model, trust_remote_code=True)
     model = None
-    if "claude" in args.model:
+    if "gemini" in args.model:
+        project_id = os.environ["GCLOUD_PROJ"]
+        location = "us-central1"
+        vertexai.init(project=project_id, location=location)
+        client = GenerativeModel("gemini-pro")
+    elif "claude" in args.model:
         client = AnthropicBedrock(
             aws_access_key=os.environ["AWS_KEY"],
             aws_secret_key=os.environ["AWS_SECRET"],
@@ -73,7 +109,9 @@ def main(args):
         mcqs = [json.loads(jline) for jline in json_file.readlines()]
     corr = 0
     for i, mcq in tqdm(enumerate(mcqs)):
-        if "claude" in args.model:
+        if "gemini" in args.model:
+            pred = gemini_eval(args, client, mcq["prompt"])
+        elif "claude" in args.model:
             pred = claude_eval(args, client, mcq["prompt"])
         else:
             pred = eval(args, model, tokenizer, mcq["prompt"])
