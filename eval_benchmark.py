@@ -13,11 +13,18 @@ import anthropic_bedrock
 from anthropic_bedrock import AnthropicBedrock
 
 import vertexai
-from vertexai.preview.generative_models import GenerativeModel, ChatSession, GenerationConfig, HarmCategory, HarmBlockThreshold
+from vertexai.preview.generative_models import (
+    GenerativeModel,
+    ChatSession,
+    GenerationConfig,
+    HarmCategory,
+    HarmBlockThreshold,
+)
+
 
 def gemini_eval(args, model, prompt):
     time.sleep(1)
-    safety_settings={
+    safety_settings = {
         HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
         HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
         HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
@@ -34,7 +41,6 @@ def gemini_eval(args, model, prompt):
         generation_config=generation_config,
         safety_settings=safety_settings,
     )
-    print(responses.candidates[0].text)
     if len(responses.candidates) == 0:
         return "None"
     if not responses.candidates[0].text.strip() in ["A", "B", "C", "D"]:
