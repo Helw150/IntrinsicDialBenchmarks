@@ -4,6 +4,7 @@ import argparse
 from tqdm import tqdm
 
 MODELS = [
+    "gpt-3.5-turbo-1106",
     "gemini-pro",
     "anthropic.claude-v2:1",
     "anthropic.claude-instant-v1",

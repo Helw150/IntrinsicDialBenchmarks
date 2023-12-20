@@ -22,6 +22,26 @@ from vertexai.preview.generative_models import (
     HarmBlockThreshold,
 )
 
+from openai import OpenAI
+import tiktoken
+
+
+def openai_eval(args, client, tokenizer, prompt):
+    time.sleep(1)
+    api_query = client.chat.completions.create(
+        model=args.model,
+        messages=[
+            {"role": "user", "content": prompt},
+        ],
+        logit_bias={tokenizer.encode(let)[0]: 20 for let in ["A", "B", "C", "D"]},
+        temperature=0,
+        max_tokens=1,
+        user="RESEARCH-DATASET-DialLex",
+    )
+    response = api_query.choices[0].message.content
+    print(response.strip())
+    return response.strip()
+
 
 def gemini_eval(args, model, prompt):
     time.sleep(1)
@@ -95,7 +115,10 @@ def main(args):
     # torch.set_default_device('cuda')
     # model = AutoModelForCausalLM.from_pretrained(args.model, trust_remote_code=True)
     model = None
-    if "gemini" in args.model:
+    if "gpt" in args.model:
+        client = OpenAI()
+        tokenizer = tiktoken.encoding_for_model(args.model)
+    elif "gemini" in args.model:
         project_id = os.environ["GCLOUD_PROJ"]
         location = "us-central1"
         vertexai.init(project=project_id, location=location)
@@ -115,7 +138,9 @@ def main(args):
         mcqs = [json.loads(jline) for jline in json_file.readlines()]
     corr = 0
     for i, mcq in tqdm(enumerate(mcqs)):
-        if "gemini" in args.model:
+        if "gpt" in args.model:
+            pred = openai_eval(args, client, tokenizer, mcq["prompt"])
+        elif "gemini" in args.model:
             pred = gemini_eval(args, client, mcq["prompt"])
         elif "claude" in args.model:
             pred = claude_eval(args, client, mcq["prompt"])
