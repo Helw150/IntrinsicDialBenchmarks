@@ -26,6 +26,7 @@ import tiktoken
 
 
 def openai_eval(args, client, tokenizer, prompt):
+    time.sleep(1)
     api_query = client.chat.completions.create(
         model=args.model,
         messages=[
