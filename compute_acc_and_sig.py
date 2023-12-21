@@ -4,6 +4,7 @@ import argparse
 from tqdm import tqdm
 
 MODELS = [
+    "mistralai/Mixtral-8x7B-v0.1",
     "gpt-4-0613",
     "gpt-4-1106-preview",
     "gpt-3.5-turbo-1106",
