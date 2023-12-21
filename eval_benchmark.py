@@ -9,22 +9,6 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import time
 from torch.cuda.amp import autocast
 
-import anthropic_bedrock
-from anthropic_bedrock import AnthropicBedrock
-
-import vertexai
-from vertexai.preview.generative_models import (
-    GenerativeModel,
-    ChatSession,
-    GenerationConfig,
-    HarmCategory,
-    HarmBlockThreshold,
-)
-
-from openai import OpenAI
-import tiktoken
-
-
 def openai_eval(args, client, tokenizer, prompt):
     api_query = client.chat.completions.create(
         model=args.model,
@@ -115,14 +99,26 @@ def main(args):
     # model = AutoModelForCausalLM.from_pretrained(args.model, trust_remote_code=True)
     model = None
     if "gpt" in args.model:
+        from openai import OpenAI
+        import tiktoken
         client = OpenAI()
         tokenizer = tiktoken.encoding_for_model(args.model)
     elif "gemini" in args.model:
+        import vertexai
+        from vertexai.preview.generative_models import (
+            GenerativeModel,
+            ChatSession,
+            GenerationConfig,
+            HarmCategory,
+            HarmBlockThreshold,
+        )
         project_id = os.environ["GCLOUD_PROJ"]
         location = "us-central1"
         vertexai.init(project=project_id, location=location)
         client = GenerativeModel("gemini-pro")
     elif "claude" in args.model:
+        import anthropic_bedrock
+        from anthropic_bedrock import AnthropicBedrock
         client = AnthropicBedrock(
             aws_access_key=os.environ["AWS_KEY"],
             aws_secret_key=os.environ["AWS_SECRET"],
