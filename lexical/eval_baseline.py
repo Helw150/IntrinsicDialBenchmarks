@@ -1,14 +1,15 @@
 import argparse
+import json
 import os
-import torch
+import time
+
 import numpy as np
 import pandas as pd
-import json
-import time
+import torch
+from torch.cuda.amp import autocast
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
-import time
-from torch.cuda.amp import autocast
+
 
 def openai_eval(args, client, tokenizer, prompt):
     time.sleep(1)
@@ -100,19 +101,17 @@ def main(args):
     # model = AutoModelForCausalLM.from_pretrained(args.model, trust_remote_code=True)
     model = None
     if "gpt" in args.model:
-        from openai import OpenAI
         import tiktoken
+        from openai import OpenAI
         client = OpenAI()
         tokenizer = tiktoken.encoding_for_model(args.model)
     elif "gemini" in args.model:
         import vertexai
-        from vertexai.preview.generative_models import (
-            GenerativeModel,
-            ChatSession,
-            GenerationConfig,
-            HarmCategory,
-            HarmBlockThreshold,
-        )
+        from vertexai.preview.generative_models import (ChatSession,
+                                                        GenerationConfig,
+                                                        GenerativeModel,
+                                                        HarmBlockThreshold,
+                                                        HarmCategory)
         project_id = os.environ["GCLOUD_PROJ"]
         location = "us-central1"
         vertexai.init(project=project_id, location=location)

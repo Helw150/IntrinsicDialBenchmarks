@@ -1,6 +1,9 @@
-import numpy as np
-import json, os, re
 import argparse
+import json
+import os
+import re
+
+import numpy as np
 from tqdm import tqdm
 
 MODELS = [
