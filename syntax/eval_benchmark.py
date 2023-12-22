@@ -1,0 +1,171 @@
+import argparse
+import json
+import os
+import time
+
+import numpy as np
+import pandas as pd
+import torch
+from torch.cuda.amp import autocast
+from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+
+def openai_eval(args, client, tokenizer, prompt):
+    time.sleep(1)
+    api_query = client.chat.completions.create(
+        model=args.model,
+        messages=[
+            {"role": "user", "content": prompt},
+        ],
+        logit_bias={tokenizer.encode(let)[0]: 20 for let in ["A", "B"]},
+        temperature=0,
+        max_tokens=1,
+        user="RESEARCH-DATASET-DialSynt",
+    )
+    response = api_query.choices[0].message.content
+    print(response.strip())
+    return response.strip()
+
+
+def gemini_eval(args, model, prompt):
+    time.sleep(1)
+    safety_settings = {
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    }
+    # Set parameters to reduce variability in responses
+    generation_config = GenerationConfig(
+        temperature=0,
+        top_k=1,
+        max_output_tokens=1,
+    )
+    responses = model.generate_content(
+        contents=[prompt],
+        generation_config=generation_config,
+        safety_settings=safety_settings,
+    )
+    if len(responses.candidates) == 0:
+        return "None"
+    if not responses.candidates[0].text.strip() in ["A", "B"]:
+        print("EXCEPT")
+    return responses.candidates[0].text.strip()
+
+
+def claude_eval(args, client, prompt):
+    completion = client.completions.create(
+        model="anthropic.claude-v2:1",
+        max_tokens_to_sample=1,
+        temperature=0,
+        prompt=f"{anthropic_bedrock.HUMAN_PROMPT}"
+        + prompt.replace("Answer:", f"{anthropic_bedrock.AI_PROMPT} Answer:"),
+    )
+
+    print(completion.completion.strip())
+    if not completion.completion.strip() in ["A", "B"]:
+        print("EXCEPT")
+    return completion.completion.strip()
+
+
+@torch.no_grad()
+def eval(args, model, tokenizer, prompt):
+    input_ids = tokenizer(prompt[:-1], return_tensors="pt").input_ids.cuda()
+    # print(tokenizer.decode(model.generate(input_ids, max_new_tokens=20)[0, -20:]))
+    logits = model(input_ids=input_ids).logits[:, -1, :].flatten()
+
+    probs = (
+        torch.nn.functional.softmax(
+            torch.tensor(
+                [
+                    logits[tokenizer(" A", add_special_tokens=False).input_ids[-1]],
+                    logits[tokenizer(" B", add_special_tokens=False).input_ids[-1]],
+                ]
+            ),
+            dim=0,
+        )
+        .detach()
+        .cpu()
+        .type(torch.float16)
+        .numpy()
+    )
+    pred = {0: "A", 1: "B"}[np.argmax(probs)]
+
+    return pred
+
+
+def main(args):
+    model = None
+    if "gpt" in args.model:
+        import tiktoken
+        from openai import OpenAI
+
+        client = OpenAI()
+        tokenizer = tiktoken.encoding_for_model(args.model)
+    elif "gemini" in args.model:
+        import vertexai
+        from vertexai.preview.generative_models import (
+            ChatSession,
+            GenerationConfig,
+            GenerativeModel,
+            HarmBlockThreshold,
+            HarmCategory,
+        )
+
+        project_id = os.environ["GCLOUD_PROJ"]
+        location = "us-central1"
+        vertexai.init(project=project_id, location=location)
+        client = GenerativeModel("gemini-pro")
+    elif "claude" in args.model:
+        import anthropic_bedrock
+        from anthropic_bedrock import AnthropicBedrock
+
+        client = AnthropicBedrock(
+            aws_access_key=os.environ["AWS_KEY"],
+            aws_secret_key=os.environ["AWS_SECRET"],
+            aws_region="us-west-2",
+        )
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model, device_map="auto", trust_remote_code=True
+        )
+        tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
+    with open("demszky_general_english_syntax_quiz.json", "r") as json_file:
+        mcqs = [json.loads(jline) + {"type": "Gen"} for jline in json_file.readlines()]
+    with open("demszky_indian_english_syntax_quiz.json", "r") as json_file:
+        mcqs += [json.loads(jline) + {"type": "Ind"} for jline in json_file.readlines()]
+    with open("demszky_invented_english_syntax_quiz.json", "r") as json_file:
+        mcqs += [json.loads(jline) + {"type": "Inv"} for jline in json_file.readlines()]
+    corrs = {"Gen": 0, "Ind": 0, "Inv": 0}
+    for i, mcq in tqdm(enumerate(mcqs)):
+        if "gpt" in args.model:
+            pred = openai_eval(args, client, tokenizer, mcq["prompt"])
+        elif "gemini" in args.model:
+            pred = gemini_eval(args, client, mcq["prompt"])
+        elif "claude" in args.model:
+            pred = claude_eval(args, client, mcq["prompt"])
+        else:
+            pred = eval(args, model, tokenizer, mcq["prompt"])
+        if pred == mcq["correct_answer"]:
+            corrs[mcq["type"]] += 1
+        mcq["model_prediction"] = pred
+
+    # with open(
+    #     f"predictions/{args.model.replace('/', '-')}_predictions.json", "w"
+    # ) as json_file:
+    #     for mcq in mcqs:
+    #         json_file.write(json.dumps(mcq) + "\n")
+    print(corr / float(len(mcqs)))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--model",
+        "-m",
+        type=str,
+        default="meta-llama/Llama-2-7b-hf",
+    )
+    args = parser.parse_args()
+    main(args)
