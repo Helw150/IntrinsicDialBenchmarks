@@ -132,11 +132,11 @@ def main(args):
         )
         tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     with open("demszky_general_english_syntax_quiz.json", "r") as json_file:
-        mcqs = [json.loads(jline) + {"type": "Gen"} for jline in json_file.readlines()]
+        mcqs = [{**json.loads(jline), **{"type": "Gen"}} for jline in json_file.readlines()]
     with open("demszky_indian_english_syntax_quiz.json", "r") as json_file:
-        mcqs += [json.loads(jline) + {"type": "Ind"} for jline in json_file.readlines()]
+        mcqs += [{**json.loads(jline), **{"type": "Ind"}} for jline in json_file.readlines()]
     with open("demszky_invented_english_syntax_quiz.json", "r") as json_file:
-        mcqs += [json.loads(jline) + {"type": "Inv"} for jline in json_file.readlines()]
+        mcqs += [{**json.loads(jline), **{"type": "Inv"}} for jline in json_file.readlines()]
     corrs = {"Gen": 0, "Ind": 0, "Inv": 0}
     for i, mcq in tqdm(enumerate(mcqs)):
         if "gpt" in args.model:
@@ -156,7 +156,10 @@ def main(args):
     # ) as json_file:
     #     for mcq in mcqs:
     #         json_file.write(json.dumps(mcq) + "\n")
-    print(corr / float(len(mcqs)))
+    for key in corrs.keys():
+        print(key)
+        sub_mcqs = [mcq for mcq in mcqs if mcq["type"] == key]
+        print(corrs[key] / float(len(sub_mcqs)))
 
 
 if __name__ == "__main__":
