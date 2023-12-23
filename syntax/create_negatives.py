@@ -78,9 +78,9 @@ for ex in invents:
     letter = random.sample(["A", "B"], 1)[0]
     prompt = f"Sentence: '{ex}'\nWhich of the following best describes the acceptability of the grammar of this sentence in the Indian English dialect?\n\n"
     if letter == "A":
-        prompt += "A: Acceptable\nB: Unacceptable"
-    elif letter == "B":
         prompt += "A: Unacceptable\nB: Acceptable"
+    elif letter == "B":
+        prompt += "A: Acceptable\nB: Unacceptable"
         prompt += "\n\n Answer: "
         invent_jsons.append({"prompt": prompt, "correct_answer": letter})
 
