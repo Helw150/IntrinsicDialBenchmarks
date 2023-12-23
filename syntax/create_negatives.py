@@ -6,8 +6,6 @@ from datasets import load_dataset
 from src.Dialects import DialectFromFeatureList, DialectFromVector, IndianDialect
 from tqdm import tqdm
 
-random.seed(42)
-
 ie = IndianDialect()
 rev_ie = DialectFromVector(vector=(ie.vector + 1) * (ie.vector == 0))
 features = [key for key, value in rev_ie.morphosyntax_transforms.items()]
@@ -33,7 +31,7 @@ df = pd.merge(
     left_on="phrase_ID",
     right_on="phrase_ID",
 )
-df = df.groupby("phrase_ID").sample(1)
+df = df.groupby("phrase_ID").sample(1, random_state=42)
 gen_e = df["sentence_x"].array.tolist()
 ind_e = df["sentence_y"].array.tolist()
 invents = [
@@ -51,6 +49,8 @@ invents = [
 
 invents = [random.sample(invent, 1)[0][0] for invent in invents]
 
+random.seed(42)
+
 gen_e_jsons = []
 for ex in gen_e:
     letter = random.sample(["A", "B"], 1)[0]
@@ -60,7 +60,7 @@ for ex in gen_e:
     elif letter == "B":
         prompt += "A: Unacceptable\nB: Acceptable"
         prompt += "\n\n Answer: "
-        gen_e_jsons.append({"prompt": prompt, "correct_answer": letter})
+    gen_e_jsons.append({"prompt": prompt, "correct_answer": letter})
 
 ind_e_jsons = []
 for ex in ind_e:
@@ -71,7 +71,7 @@ for ex in ind_e:
     elif letter == "B":
         prompt += "A: Unacceptable\nB: Acceptable"
         prompt += "\n\n Answer: "
-        ind_e_jsons.append({"prompt": prompt, "correct_answer": letter})
+    ind_e_jsons.append({"prompt": prompt, "correct_answer": letter})
 
 invent_jsons = []
 for ex in invents:
@@ -82,7 +82,7 @@ for ex in invents:
     elif letter == "B":
         prompt += "A: Acceptable\nB: Unacceptable"
         prompt += "\n\n Answer: "
-        invent_jsons.append({"prompt": prompt, "correct_answer": letter})
+    invent_jsons.append({"prompt": prompt, "correct_answer": letter})
 
 with open("demszky_indian_english_syntax_quiz.json", "w") as json_file:
     for entry in ind_e_jsons:
