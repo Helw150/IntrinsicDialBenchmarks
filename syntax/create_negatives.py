@@ -54,35 +54,20 @@ random.seed(42)
 gen_e_jsons = []
 for ex in gen_e:
     letter = random.sample(["A", "B"], 1)[0]
-    prompt = f"Sentence: '{ex}'\nWhich of the following best describes the grammar of this sentence according to commonly used syntax in the Indian English dialect?\n\n"
-    if letter == "A":
-        prompt += "A: Acceptable\nB: Unacceptable"
-    elif letter == "B":
-        prompt += "A: Unacceptable\nB: Acceptable"
-    prompt += "\n\n Answer: "
-    gen_e_jsons.append({"prompt": prompt, "correct_answer": letter})
+    prompt = f"Sentence: '{ex}'\nIs the previous sentence likely to be acceptable to a speaker of Indian English?\n\nSay only Yes or No.\n\n Answer: "
+    gen_e_jsons.append({"prompt": prompt, "correct_answer": "Yes"})
 
 ind_e_jsons = []
 for ex in ind_e:
     letter = random.sample(["A", "B"], 1)[0]
-    prompt = f"Sentence: '{ex}'\nWhich of the following best describes the grammar of this sentence according to commonly used syntax in the Indian English dialect?\n\n"
-    if letter == "A":
-        prompt += "A: Acceptable\nB: Unacceptable"
-    elif letter == "B":
-        prompt += "A: Unacceptable\nB: Acceptable"
-    prompt += "\n\n Answer: "
-    ind_e_jsons.append({"prompt": prompt, "correct_answer": letter})
+    prompt = f"Sentence: '{ex}'\nIs the previous sentence likely to be acceptable to a speaker of Indian English?\n\nSay only Yes or No.\n\n Answer: "
+    ind_e_jsons.append({"prompt": prompt, "correct_answer": "Yes"})
 
 invent_jsons = []
 for ex in invents:
     letter = random.sample(["A", "B"], 1)[0]
-    prompt = f"Sentence: '{ex}'\nWhich of the following best describes the grammar of this sentence according to commonly used syntax in the Indian English dialect?\n\n"
-    if letter == "A":
-        prompt += "A: Unacceptable\nB: Acceptable"
-    elif letter == "B":
-        prompt += "A: Acceptable\nB: Unacceptable"
-    prompt += "\n\n Answer: "
-    invent_jsons.append({"prompt": prompt, "correct_answer": letter})
+    prompt = f"Sentence: '{ex}'\nIs the previous sentence likely to be acceptable to a speaker of Indian English?\n\nSay only Yes or No.\n\n Answer: "
+    invent_jsons.append({"prompt": prompt, "correct_answer": "No"})
 
 with open("demszky_indian_english_syntax_quiz.json", "w") as json_file:
     for entry in ind_e_jsons:
