@@ -74,10 +74,12 @@ def claude_eval(args, client, prompt):
 def eval(args, model, tokenizer, prompts):
     if prompts[-1] not in string.punctuation:
         prompts = prompts + "."
-    prompts = "The following is an example of acceptable Indian English: '" + prompts + "'"
+    prompts = (
+        "The following is an example of acceptable Indian English: '" + prompts + "'"
+    )
     input_ids = tokenizer(prompts, padding=False, return_tensors="pt").input_ids.cuda()
     logits = model(input_ids=input_ids).logits
-    
+
     loss = torch.nn.CrossEntropyLoss(reduction="sum")
     nll = loss(logits[0, :-1, :], input_ids[0, 1:])
     return nll.cpu().numpy().item()
@@ -121,7 +123,9 @@ def main(args):
         model.eval()
         tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     with open("inde_blimp.json", "r") as json_file:
-        triplets = [{**json.loads(jline), **{"type": "Gen"}} for jline in json_file.readlines()]
+        triplets = [
+            {**json.loads(jline), **{"type": "Gen"}} for jline in json_file.readlines()
+        ]
     corrs = {"Gen": 0, "Ind": 0}
     for i, triplet in tqdm(enumerate(triplets)):
         if "gpt" in args.model:
