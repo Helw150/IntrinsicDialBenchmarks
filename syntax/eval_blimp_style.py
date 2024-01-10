@@ -132,18 +132,24 @@ def main(args):
             pred = claude_eval(args, client, mcq["prompt"])
         else:
             prompts = [triplet[key] for key in triplet]
-            gen = eval(args, model, tokenizer, prompts[0])
-            ind = eval(args, model, tokenizer, prompts[1])
-            inv = eval(args, model, tokenizer, prompts[2])
-            if gen < inv:
+            triplet["gen_nll"] = eval(args, model, tokenizer, prompts[0])
+            triplet["ind_nll"] = eval(args, model, tokenizer, prompts[1])
+            triplet["inv_nll"] = eval(args, model, tokenizer, prompts[2])
+            triplet["gen_corr"] = triplet["gen_nll"] < triplet["inv_nll"]
+            triplet["ind_corr"] = triplet["ind_nll"] < triplet["inv_nll"]
+            if triplet["gen_corr"]:
                 corrs["Gen"] += 1
-            if ind < inv:
-                print(prompts)
+            if triplet["ind_corr"]:
                 corrs["Ind"] += 1
 
     for key in corrs.keys():
         print(key)
         print(corrs[key] / len(triplets))
+    with open(
+        f"predictions/{args.model.replace('/', '-')}_predictions.json", "w"
+    ) as json_file:
+        for triplet in triplets:
+            json_file.write(json.dumps(triplet) + "\n")
 
 
 if __name__ == "__main__":
