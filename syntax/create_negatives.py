@@ -54,19 +54,19 @@ random.seed(42)
 gen_e_jsons = []
 for ex in gen_e:
     letter = random.sample(["A", "B"], 1)[0]
-    prompt = f"Sentence: '{ex}'\nIs the previous sentence likely to be acceptable to a speaker of Indian English?\n\nSay only Yes or No.\n\n Answer: "
+    prompt = f"Sentence: '{ex}'\nIs the previous sentence likely to be acceptable to a speaker of Indian English?\n\nSay only Yes or No.\n\n Answer:"
     gen_e_jsons.append({"prompt": prompt, "correct_answer": "Yes"})
 
 ind_e_jsons = []
 for ex in ind_e:
     letter = random.sample(["A", "B"], 1)[0]
-    prompt = f"Sentence: '{ex}'\nIs the previous sentence likely to be acceptable to a speaker of Indian English?\n\nSay only Yes or No.\n\n Answer: "
+    prompt = f"Sentence: '{ex}'\nIs the previous sentence likely to be acceptable to a speaker of Indian English?\n\nSay only Yes or No.\n\n Answer:"
     ind_e_jsons.append({"prompt": prompt, "correct_answer": "Yes"})
 
 invent_jsons = []
 for ex in invents:
     letter = random.sample(["A", "B"], 1)[0]
-    prompt = f"Sentence: '{ex}'\nIs the previous sentence likely to be acceptable to a speaker of Indian English?\n\nSay only Yes or No.\n\n Answer: "
+    prompt = f"Sentence: '{ex}'\nIs the previous sentence likely to be acceptable to a speaker of Indian English?\n\nSay only Yes or No.\n\n Answer:"
     invent_jsons.append({"prompt": prompt, "correct_answer": "No"})
 
 with open("demszky_indian_english_syntax_quiz.json", "w") as json_file:
