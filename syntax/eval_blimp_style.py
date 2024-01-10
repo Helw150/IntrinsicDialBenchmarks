@@ -81,7 +81,7 @@ def eval(args, model, tokenizer, prompts):
     logits = model(input_ids=input_ids).logits
 
     loss = torch.nn.CrossEntropyLoss(reduction="sum")
-    nll = loss(logits[0, :-1, :], input_ids[0, 1:])
+    nll = loss(logits[0, :-1, :], input_ids[0, 1:]).type(torch.float16)
     return nll.cpu().numpy().item()
 
 
