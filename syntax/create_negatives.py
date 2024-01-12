@@ -53,6 +53,7 @@ invents = [random.sample(invent, 1)[0][0] for invent in invents]
 
 random.seed(42)
 
+<<<<<<< HEAD
 triplets = []
 for i, ex in enumerate(gen_e):
     ind_ex = ind_e[i]

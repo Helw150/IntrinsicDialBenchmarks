@@ -3,6 +3,7 @@ import json
 import os
 import time
 
+import string
 import numpy as np
 import pandas as pd
 import torch
@@ -70,29 +71,18 @@ def claude_eval(args, client, prompt):
 
 
 @torch.no_grad()
-def eval(args, model, tokenizer, prompt):
-    input_ids = tokenizer(prompt[:-1], return_tensors="pt").input_ids.cuda()
-    # print(tokenizer.decode(model.generate(input_ids, max_new_tokens=20)[0, -20:]))
-    logits = model(input_ids=input_ids).logits[:, -1, :].flatten()
-
-    probs = (
-        torch.nn.functional.softmax(
-            torch.tensor(
-                [
-                    logits[tokenizer(" A", add_special_tokens=False).input_ids[-1]],
-                    logits[tokenizer(" B", add_special_tokens=False).input_ids[-1]],
-                ]
-            ),
-            dim=0,
-        )
-        .detach()
-        .cpu()
-        .type(torch.float16)
-        .numpy()
+def eval(args, model, tokenizer, prompts):
+    if prompts[-1] not in string.punctuation:
+        prompts = prompts + "."
+    prompts = (
+        "The following is an example of acceptable Indian English: '" + prompts + "'"
     )
-    pred = {0: "A", 1: "B"}[np.argmax(probs)]
+    input_ids = tokenizer(prompts, padding=False, return_tensors="pt").input_ids.cuda()
+    logits = model(input_ids=input_ids).logits
 
-    return pred
+    loss = torch.nn.CrossEntropyLoss(reduction="sum")
+    nll = loss(logits[0, :-1, :], input_ids[0, 1:]).type(torch.float16)
+    return nll.cpu().numpy().item()
 
 
 def main(args):
@@ -130,15 +120,14 @@ def main(args):
         model = AutoModelForCausalLM.from_pretrained(
             args.model, device_map="auto", trust_remote_code=True
         )
+        model.eval()
         tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
-    with open("demszky_general_english_syntax_quiz.json", "r") as json_file:
-        mcqs = [{**json.loads(jline), **{"type": "Gen"}} for jline in json_file.readlines()]
-    with open("demszky_indian_english_syntax_quiz.json", "r") as json_file:
-        mcqs += [{**json.loads(jline), **{"type": "Ind"}} for jline in json_file.readlines()]
-    with open("demszky_invented_english_syntax_quiz.json", "r") as json_file:
-        mcqs += [{**json.loads(jline), **{"type": "Inv"}} for jline in json_file.readlines()]
-    corrs = {"Gen": 0, "Ind": 0, "Inv": 0}
-    for i, mcq in tqdm(enumerate(mcqs)):
+    with open("inde_blimp.json", "r") as json_file:
+        triplets = [
+            {**json.loads(jline), **{"type": "Gen"}} for jline in json_file.readlines()
+        ]
+    corrs = {"Gen": 0, "Ind": 0}
+    for i, triplet in tqdm(enumerate(triplets)):
         if "gpt" in args.model:
             pred = openai_eval(args, client, tokenizer, mcq["prompt"])
         elif "gemini" in args.model:
@@ -146,20 +135,25 @@ def main(args):
         elif "claude" in args.model:
             pred = claude_eval(args, client, mcq["prompt"])
         else:
-            pred = eval(args, model, tokenizer, mcq["prompt"])
-        if pred == mcq["correct_answer"]:
-            corrs[mcq["type"]] += 1
-        mcq["model_prediction"] = pred
+            prompts = [triplet[key] for key in triplet]
+            triplet["gen_nll"] = eval(args, model, tokenizer, prompts[0])
+            triplet["ind_nll"] = eval(args, model, tokenizer, prompts[1])
+            triplet["inv_nll"] = eval(args, model, tokenizer, prompts[2])
+            triplet["gen_corr"] = triplet["gen_nll"] < triplet["inv_nll"]
+            triplet["ind_corr"] = triplet["ind_nll"] < triplet["inv_nll"]
+            if triplet["gen_corr"]:
+                corrs["Gen"] += 1
+            if triplet["ind_corr"]:
+                corrs["Ind"] += 1
 
-    # with open(
-    #     f"predictions/{args.model.replace('/', '-')}_predictions.json", "w"
-    # ) as json_file:
-    #     for mcq in mcqs:
-    #         json_file.write(json.dumps(mcq) + "\n")
     for key in corrs.keys():
         print(key)
-        sub_mcqs = [mcq for mcq in mcqs if mcq["type"] == key]
-        print(corrs[key] / float(len(sub_mcqs)))
+        print(corrs[key] / len(triplets))
+    with open(
+        f"predictions/{args.model.replace('/', '-')}_predictions.json", "w"
+    ) as json_file:
+        for triplet in triplets:
+            json_file.write(json.dumps(triplet) + "\n")
 
 
 if __name__ == "__main__":
