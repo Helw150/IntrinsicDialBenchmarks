@@ -1,6 +1,7 @@
 import json
 import random
 
+import string
 import pandas as pd
 from datasets import load_dataset
 from src.Dialects import DialectFromFeatureList, DialectFromVector, IndianDialect
@@ -31,6 +32,7 @@ df = pd.merge(
     left_on="phrase_ID",
     right_on="phrase_ID",
 )
+df = df[df["sentence_x"] != df["sentence_y"]]
 df = df.groupby("phrase_ID").sample(1, random_state=42)
 gen_e = df["sentence_x"].array.tolist()
 ind_e = df["sentence_y"].array.tolist()
@@ -51,32 +53,12 @@ invents = [random.sample(invent, 1)[0][0] for invent in invents]
 
 random.seed(42)
 
-gen_e_jsons = []
-for ex in gen_e:
-    letter = random.sample(["A", "B"], 1)[0]
-    prompt = f"Sentence: '{ex}'\nIs the previous sentence likely to be acceptable to a speaker of Indian English?\n\nSay only Yes or No.\n\n Answer: "
-    gen_e_jsons.append({"prompt": prompt, "correct_answer": "Yes"})
+triplets = []
+for i, ex in enumerate(gen_e):
+    ind_ex = ind_e[i]
+    inv_ex = invents[i]
+    triplets.append({"base": ex, "demszky": ind_ex, "invent": inv_ex})
 
-ind_e_jsons = []
-for ex in ind_e:
-    letter = random.sample(["A", "B"], 1)[0]
-    prompt = f"Sentence: '{ex}'\nIs the previous sentence likely to be acceptable to a speaker of Indian English?\n\nSay only Yes or No.\n\n Answer: "
-    ind_e_jsons.append({"prompt": prompt, "correct_answer": "Yes"})
-
-invent_jsons = []
-for ex in invents:
-    letter = random.sample(["A", "B"], 1)[0]
-    prompt = f"Sentence: '{ex}'\nIs the previous sentence likely to be acceptable to a speaker of Indian English?\n\nSay only Yes or No.\n\n Answer: "
-    invent_jsons.append({"prompt": prompt, "correct_answer": "No"})
-
-with open("demszky_indian_english_syntax_quiz.json", "w") as json_file:
-    for entry in ind_e_jsons:
-        json_file.write(json.dumps(entry) + "\n")
-
-with open("demszky_general_english_syntax_quiz.json", "w") as json_file:
-    for entry in gen_e_jsons:
-        json_file.write(json.dumps(entry) + "\n")
-
-with open("demszky_invented_english_syntax_quiz.json", "w") as json_file:
-    for entry in invent_jsons:
+with open("inde_blimp.json", "w") as json_file:
+    for entry in triplets:
         json_file.write(json.dumps(entry) + "\n")
