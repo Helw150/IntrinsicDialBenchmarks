@@ -70,7 +70,7 @@ def Bootstrap(data_A, data_B, R=10000, alpha=0.05):
     return pval
 
 
-def split_corr(pred_1, gold_1, pred_2, gold_2):
+def split_corr(pred_1, gold_1, pred_2, gold_2, loanwords):
     model_1_pred = np.array(pred_1)
     model_1_gold = np.array(gold_1)
     corr_1 = (model_1_pred == model_1_gold).astype(int)
@@ -79,21 +79,30 @@ def split_corr(pred_1, gold_1, pred_2, gold_2):
     model_2_gold = np.array(gold_2)
     corr_2 = (model_2_pred == model_2_gold).astype(int)
 
+    loanword_array = np.array(loanwords)
+
+    corr_loan = (corr_1 * loanword_array).sum() / loanword_array.sum()
+    corr_regular = (corr_1 * -(loanword_array - 1)).sum() / (
+        len(loanword_array) - loanword_array.sum()
+    )
     print(
-        "Model 1 and Model 2 mean accuracy. Model 1: {} Model 2 {}".format(
-            corr_1.mean(), corr_2.mean()
+        "Model 1 and Model 2 mean accuracy. Model 1: {} Model 2 {}\nLoanword Accuracy: {}, Non-Loan Accuracy: {}".format(
+            corr_1.mean(), corr_2.mean(), corr_loan, corr_regular
         )
     )
-    return corr_1, corr_2
+    return corr_1, corr_2, corr_loan, corr_regular
 
 
 def main(args):
+    with open(f"overlap.txt", "r") as overlap:
+        loanwords = {item.strip() for item in overlap.readlines()}
     with open(
         f"./predictions/{args.model.replace('/', '-')}_predictions.json", "r"
     ) as json_file:
         dial_mcqs = [json.loads(jline) for jline in json_file.readlines()]
     dial_pred = [mcq["model_prediction"] for mcq in dial_mcqs]
     dial_gold = [mcq["correct_answer"] for mcq in dial_mcqs]
+    loanwords = [mcq["term"] in loanwords for mcq in dial_mcqs]
 
     with open(
         f"./baseline_predictions/{args.model.replace('/', '-')}_predictions.json", "r"
@@ -102,7 +111,9 @@ def main(args):
     gen_pred = [mcq["model_prediction"] for mcq in gen_mcqs]
     gen_gold = [mcq["correct_answer"] for mcq in gen_mcqs]
     print(args.model)
-    corrs_1, corrs_2 = split_corr(dial_pred, dial_gold, gen_pred, gen_gold)
+    corrs_1, corrs_2, perc_loan, perc_standalone = split_corr(
+        dial_pred, dial_gold, gen_pred, gen_gold, loanwords
+    )
 
     try:
         sig = Bootstrap(corrs_2, corrs_1)
@@ -114,9 +125,15 @@ def main(args):
                 )
             )
             print("--------------")
-        return {"Significance": sig}
+        return {
+            "significance": sig,
+            "control": corrs_2.mean(),
+            "inde_overall": corrs_1.mean(),
+            "inde_loan": perc_loan,
+            "inde_standalone": perc_standalone,
+        }
     except:
-        return {"Significance": None}
+        return {"significance": None}
 
 
 if __name__ == "__main__":
