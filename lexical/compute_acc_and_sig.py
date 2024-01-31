@@ -51,19 +51,16 @@ MODELS = [
 # "An Empirical Investigation of Statistical Significance in NLP".
 def Bootstrap(data_A, data_B, R=10000, alpha=0.05):
     n = len(data_A)
+    m = len(data_B)
     R = max(R, int(len(data_A) * (1 / float(alpha))))
     delta_orig = float(sum([x - y for x, y in zip(data_A, data_B)])) / n
     r = 0
     for x in range(0, R):
-        temp_A = []
-        temp_B = []
-        samples = np.random.randint(
-            0, n, n
-        )  # which samples to add to the subsample with repetitions
-        for samp in samples:
-            temp_A.append(data_A[samp])
-            temp_B.append(data_B[samp])
-        delta = float(sum([x - y for x, y in zip(temp_A, temp_B)])) / n
+        samples = np.random.randint(0, n, n)
+        temp_A = data_A[samples]
+        samples = np.random.randint(0, m, m)
+        temp_B = data_B[samples]
+        delta = temp_A.mean() - temp_B.mean()
         if delta > 2 * delta_orig:
             r = r + 1
     pval = float(r) / (R)
@@ -81,16 +78,20 @@ def split_corr(pred_1, gold_1, pred_2, gold_2, loanwords):
 
     loanword_array = np.array(loanwords)
 
-    corr_loan = (corr_1 * loanword_array).sum() / loanword_array.sum()
-    corr_regular = (corr_1 * -(loanword_array - 1)).sum() / (
-        len(loanword_array) - loanword_array.sum()
-    )
     print(
         "Model 1 and Model 2 mean accuracy. Model 1: {} Model 2 {}\nLoanword Accuracy: {}, Non-Loan Accuracy: {}".format(
-            corr_1.mean(), corr_2.mean(), corr_loan, corr_regular
+            corr_1.mean(),
+            corr_2.mean(),
+            corr_1[loanword_array.astype(bool)].mean(),
+            corr_1[~loanword_array.astype(bool)].mean(),
         )
     )
-    return corr_1, corr_2, corr_loan, corr_regular
+    return (
+        corr_1,
+        corr_2,
+        corr_1[loanword_array.astype(bool)],
+        corr_1[~loanword_array.astype(bool)],
+    )
 
 
 def main(args):
@@ -111,26 +112,27 @@ def main(args):
     gen_pred = [mcq["model_prediction"] for mcq in gen_mcqs]
     gen_gold = [mcq["correct_answer"] for mcq in gen_mcqs]
     print(args.model)
-    corrs_1, corrs_2, perc_loan, perc_standalone = split_corr(
+    corrs_inde, corrs_sae, corr_loan, corr_standalone = split_corr(
         dial_pred, dial_gold, gen_pred, gen_gold, loanwords
     )
 
     try:
-        sig = Bootstrap(corrs_2, corrs_1)
-
+        sig_o = Bootstrap(corrs_sae, corrs_inde)
         if args.verbose:
             print(
                 "The p-value for General English knowledge being better than Indian English Knowledge in {} is {}".format(
-                    args.model, sig
+                    args.model, sig_o
                 )
             )
             print("--------------")
         return {
-            "significance": sig,
+            "significance": sig_o,
+            "significance_loan": sig_l,
+            "significance_standalone": sig_s,
             "control": corrs_2.mean(),
             "inde_overall": corrs_1.mean(),
-            "inde_loan": perc_loan,
-            "inde_standalone": perc_standalone,
+            "inde_loan": corr_loan.mean(),
+            "inde_standalone": corr_standalone.mean(),
         }
     except:
         return {"significance": None}
