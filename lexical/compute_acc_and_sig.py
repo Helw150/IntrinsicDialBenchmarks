@@ -127,10 +127,8 @@ def main(args):
             print("--------------")
         return {
             "significance": sig_o,
-            "significance_loan": sig_l,
-            "significance_standalone": sig_s,
-            "control": corrs_2.mean(),
-            "inde_overall": corrs_1.mean(),
+            "control": corrs_sae.mean(),
+            "inde_overall": corrs_inde.mean(),
             "inde_loan": corr_loan.mean(),
             "inde_standalone": corr_standalone.mean(),
         }
