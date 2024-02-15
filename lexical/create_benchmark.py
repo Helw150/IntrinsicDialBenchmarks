@@ -3,14 +3,29 @@ import random
 
 random.seed(42)
 
+pake = 0
+benge = 0
+inde = 0
+
 
 def validate_dial(sense):
+    global pake
+    global benge
+    global inde
     if "categories" not in sense:
         return False
+    mark = False
     for category in sense["categories"]:
+        if "Pakistani English" == category["name"]:
+            pake += 1
+            mark = True
+        if "Bangladeshi English" == category["name"]:
+            benge += 1
+            mark = True
         if "Indian English" == category["name"]:
-            return True
-    return False
+            inde += 1
+            mark = True
+    return mark
 
 
 def assign_letters(options):
@@ -65,7 +80,9 @@ for entry in processed_dict:
     entry[
         "prompt"
     ] = f"Which of the following could \"{entry['term']}\" mean in Indian English when used as a {entry['pos']}?\n\n{string_options}\n\nAnswer: "
-
+print(pake)
+print(benge)
+print(inde)
 with open("wiktionary_indian_english_lexicon_quiz.json", "w") as json_file:
     for entry in processed_dict:
         json_file.write(json.dumps(entry) + "\n")

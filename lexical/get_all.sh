@@ -4,8 +4,12 @@ wget -nc https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jso
 
 # Define an array of URLs
 urls=(
-  "https://en.wiktionary.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Indian_English&gcmlimit=max&format=json"
-  "https://en.wiktionary.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Indian_English&gcmlimit=max&gcmcontinue=page|47414e44550a47414e4455|6344566&format=json"
+    "https://en.wiktionary.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Bangladeshi_English&gcmlimit=max&format=json"
+
+    "https://en.wiktionary.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Pakistani_English&gcmlimit=max&format=json"
+
+    "https://en.wiktionary.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Indian_English&gcmlimit=max&format=json"
+      "https://en.wiktionary.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Indian_English&gcmlimit=max&gcmcontinue=page|47414e44550a47414e4455|6344566&format=json"
   "https://en.wiktionary.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Indian_English&gcmlimit=max&gcmcontinue=page|4e52430a4e5243|184888&format=json" "https://en.wiktionary.org/w/api.php?action=query&generator=categorymembers&gcmtitle=Category:Indian_English&gcmlimit=max&gcmcontinue=page|554e495155454944454e54494649434154494f4e4e554d4245520a554e495155452049444544454e54494649434154494f4e204e554d424552|2915079&format=json"
 )
 
