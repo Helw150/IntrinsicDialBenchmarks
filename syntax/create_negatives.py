@@ -16,6 +16,7 @@ transformations = [
     for feature in features
     if feature
     not in [
+        "for_to",
         "a_ing",
         "indefinite_for_zero",
         "adj_postfix",
