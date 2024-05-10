@@ -4,7 +4,7 @@ import random
 import string
 import pandas as pd
 from datasets import load_dataset
-from src.Dialects import DialectFromFeatureList, DialectFromVector, IndianDialect
+from multivalue.Dialects import DialectFromFeatureList, DialectFromVector, IndianDialect
 from tqdm import tqdm
 
 ie = IndianDialect()
